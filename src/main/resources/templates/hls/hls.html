@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Insert title here</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+  <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
+  <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
+</head>
+<body>
+<video id="video" class="video-js" controls="controls" width="400" autoplay="autoplay"></video>
+
+<div id="rates"></div>
+<p id="stat"></p>
+
+<!--
+<script th:inline="javascript">
+  var video = document.getElementById('video');
+  var bitrates = document.getElementById('rates');
+  /*<![CDATA[*/
+  var videoUrl = /*[[ ${videoUrl} ]]*/;
+  /*]]*/
+  var hls = new Hls();
+  hls.loadSource(videoSrc);
+  hls.attachMedia(video);
+  hls.loadLevel = 0;
+  hls.on(Hls.Events.MANIFEST_PARSED, (_, { levels }) =>
+    levels.map((level, index)=>{
+      const button = document.createElement('button');
+      button.innerText = `${level.height}p`;
+      button.setAttribute('data-index', index);
+      bitrates.appendChild(button);
+    })
+  );
+  bitrates.addEventListener("click", ({target:{tagName, dataset}}) =>{
+    if(tagName === 'BUTTON'){
+      hls.currentLevel = dataset.index;
+    }
+  });
+</script> -->
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  var videoSrc = /*[[ ${videoUrl} ]]*/;
+  /*]]*/
+  var video = document.getElementById('video');
+  if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = videoSrc;
+
+  } else if (Hls.isSupported()) {
+    var hls = new Hls();
+    hls.loadSource(videoSrc);
+    hls.attachMedia(video);
+  }
+
+  var stat = document.getElementById('stat');
+  var bitrates = document.getElementById('rates');
+  hls.on(Hls.Events.MANIFEST_PARSED, (_, { levels }) =>
+          levels.map((level, index)=>{
+            const button = document.createElement('button');
+            button.innerText = `${level.height}p`;
+            button.setAttribute('data-index', index);
+            bitrates.appendChild(button);
+          })
+  );
+  bitrates.addEventListener("click", ({target:{tagName, dataset}}) =>{
+    if(tagName === 'BUTTON'){
+      hls.currentLevel = dataset.index;
+    }
+    stat.innerText = hls.currentLevel;
+  });
+</script>
+
+<!-- <script th:inline="javascript">
+  /*<![CDATA[*/
+  var videoUrl = /*[[ ${videoUrl} ]]*/;
+  /*]]*/
+  videojs.Vhs.xhr.beforeRequest = function (options) {
+    options.headers = {
+      Authorization: 'Bearer ' + "userToken"
+    };
+    return options;
+  };
+  var $vplay = videojs("video");
+  $vplay.src({
+    src : videoUrl,
+    type: "application/x-mpegurl"
+  });
+</script> -->
+
+
+</body>
+</html>
