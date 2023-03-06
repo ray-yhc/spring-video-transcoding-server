@@ -12,9 +12,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 
@@ -26,11 +29,16 @@ public class S3ResourceStorage {
     private String bucket;
     private final AmazonS3Client amazonS3Client;
 
-    public void store(String fullPath, MultipartFile multipartFile) {
-        File file = new File(MultipartUtil.getLocalHomeDirectory(), fullPath);
+    public void store(String DirPath, String fileName, MultipartFile multipartFile) {
+        log.debug("DirPath = {}", DirPath);
+        log.debug("fullPath = {}", fileName);
+        File file = new File(MultipartUtil.getLocalHomeDirectory(), fileName);
         try {
             multipartFile.transferTo(file);
-            amazonS3Client.putObject(new PutObjectRequest(bucket, fullPath, file)
+            // s3 내에 dir 생성
+            amazonS3Client.putObject(bucket, DirPath, new ByteArrayInputStream(new byte[0]), new ObjectMetadata() );
+            // s3에 파일 업로드
+            amazonS3Client.putObject(new PutObjectRequest(bucket, DirPath + fileName, file)
                     .withCannedAcl(CannedAccessControlList.PublicRead));
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -54,5 +62,26 @@ public class S3ResourceStorage {
         httpHeaders.setContentDispositionFormData("attachment", fileName);
 
         return new ResponseEntity<>(bytes, httpHeaders, HttpStatus.OK);
+    }
+
+
+
+    public File saveObjectInLocal (String storedFileName, String directoryName) {
+        try {
+            S3Object o = amazonS3Client.getObject(new GetObjectRequest(bucket, storedFileName));
+            S3ObjectInputStream objectContent = o.getObjectContent();
+            FileCopyUtils.copy(objectContent,
+                    new FileOutputStream(
+                            directoryName
+                                    + '/' + storedFileName
+                    ));
+        } catch (AmazonS3Exception ae) {
+            ae.printStackTrace();
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+
+        return new File(directoryName
+                + '/' + storedFileName);
     }
 }

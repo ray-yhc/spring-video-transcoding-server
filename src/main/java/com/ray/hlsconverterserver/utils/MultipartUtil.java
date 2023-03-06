@@ -1,11 +1,16 @@
 package com.ray.hlsconverterserver.utils;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 
 import java.util.UUID;
 
+@Slf4j
 public final class MultipartUtil {
-    private static final String BASE_DIR = "video";
+
+//    @Value("${cloud.aws.s3.base-dir}")
+    private static String BASE_DIR = "video";
 
     /**
      * 로컬에서의 사용자 홈 디렉토리 경로를 반환합니다.
@@ -51,7 +56,16 @@ public final class MultipartUtil {
      * @param fileId 생성된 파일 고유 ID
      * @param format 확장자
      */
-    public static String createPath(String fileId, String format) {
-        return String.format("%s/%s.%s", BASE_DIR, fileId, format);
+    public static String createName(String fileId, String format) {
+        return String.format("%s.%s", fileId, format);
+    }
+
+    /**
+     * 파일의 디렉토리 경로를 생성합니다.
+     * @param fileId 생성된 파일 고유 ID
+     */
+    public static String createDirPath(String fileId) {
+        log.debug("BASE_DIR = {}", BASE_DIR);
+        return String.format("%s/%s/", BASE_DIR, fileId);
     }
 }

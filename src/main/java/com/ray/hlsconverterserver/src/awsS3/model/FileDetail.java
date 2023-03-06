@@ -29,9 +29,16 @@ public class FileDetail {
                 .id(fileId)
                 .name(multipartFile.getOriginalFilename())
                 .format(format)
-                .path(MultipartUtil.createPath(fileId, format))
+                .path(MultipartUtil.createDirPath(fileId) + MultipartUtil.createName(fileId, format))
                 .bytes(multipartFile.getSize())
                 .build();
+    }
+
+    public String getSaveDirPath() {
+        return MultipartUtil.createDirPath(id);
+    }
+    public String getSaveFileName() {
+        return MultipartUtil.createName(id, format);
     }
 }
 

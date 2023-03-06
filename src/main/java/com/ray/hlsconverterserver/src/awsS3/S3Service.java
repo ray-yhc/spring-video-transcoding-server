@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 
 @Service
@@ -18,7 +19,8 @@ public class S3Service {
 
     public FileDetail save(MultipartFile multipartFile) {
         FileDetail fileDetail = FileDetail.multipartOf(multipartFile);
-        s3Storage.store(fileDetail.getPath(), multipartFile);
+
+        s3Storage.store(fileDetail.getSaveDirPath(), fileDetail.getSaveFileName(), multipartFile);
         return fileDetail;
     }
 
