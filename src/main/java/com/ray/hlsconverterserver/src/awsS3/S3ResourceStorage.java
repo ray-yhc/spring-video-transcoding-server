@@ -29,6 +29,12 @@ public class S3ResourceStorage {
     private String bucket;
     private final AmazonS3Client amazonS3Client;
 
+    /**
+     * ex - bucket://dir001/dir002/myFile.txt
+     * @param DirPath dir001/dir002/
+     * @param fileName myFile.txt
+     * @param multipartFile
+     */
     public void store(String DirPath, String fileName, MultipartFile multipartFile) {
         log.debug("DirPath = {}", DirPath);
         log.debug("fullPath = {}", fileName);
@@ -37,6 +43,30 @@ public class S3ResourceStorage {
             multipartFile.transferTo(file);
             // s3 내에 dir 생성
             amazonS3Client.putObject(bucket, DirPath, new ByteArrayInputStream(new byte[0]), new ObjectMetadata() );
+            // s3에 파일 업로드
+            amazonS3Client.putObject(new PutObjectRequest(bucket, DirPath + fileName, file)
+                    .withCannedAcl(CannedAccessControlList.PublicRead));
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RuntimeException();
+        } finally {
+            if (file.exists()) {
+                file.delete();
+            }
+        }
+    }
+
+
+    /**
+     * ex - bucket://dir001/dir002/myFile.txt
+     * @param DirPath dir001/dir002/
+     * @param fileName myFile.txt
+     * @param file
+     */
+    public void store(String DirPath, String fileName, File file) {
+        log.debug("DirPath = {}", DirPath);
+        log.debug("fullPath = {}", fileName);
+        try {
             // s3에 파일 업로드
             amazonS3Client.putObject(new PutObjectRequest(bucket, DirPath + fileName, file)
                     .withCannedAcl(CannedAccessControlList.PublicRead));

@@ -34,11 +34,11 @@ public class TransController {
      */
     @PostMapping("/convert")
     public ResponseEntity<Integer> videoConvertRequest(
-            @RequestParam String name,
+            @RequestParam String filePath,
             @RequestParam Integer resolution
     ) {
 
-        transService.convertRequest(name, resolution);
+        transService.convertRequest(filePath, resolution);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }

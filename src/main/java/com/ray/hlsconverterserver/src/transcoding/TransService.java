@@ -39,55 +39,80 @@ public class TransService {
 //        this.s3Storage = s3Storage;
 //    }
 
-    public void convertRequest(String name, int resolution) {
+    public void convertRequest(String s3FilePath, int resolution) {
 
-        //* 파일명
+        //파일명
         // aaa/aaa/bbb.xxx => bbb
-        String ONLY_FILENAME = name.substring(0, name.lastIndexOf("."));
-        if (ONLY_FILENAME.contains("/")) ONLY_FILENAME = ONLY_FILENAME.substring(name.lastIndexOf("/") + 1);
+        String onlyName = s3FilePath.substring(0, s3FilePath.lastIndexOf("."));
+        if (onlyName.contains("/")) onlyName = onlyName.substring(onlyName.lastIndexOf("/") + 1);
 
+        String nameExtention = s3FilePath;
+        if (nameExtention.contains("/")) nameExtention = nameExtention.substring(nameExtention.lastIndexOf("/") + 1);
+        String s3DirPath =  s3FilePath.substring(0, s3FilePath.lastIndexOf("/")) + "/";
 
         // bbb 디렉토리 추가
-        String ROOT_DIR = MultipartUtil.getLocalHomeDirectory();
-        String DIR_NAME = ROOT_DIR + "/" + name.substring(0, name.lastIndexOf("/"));
-        File dirPath = new File(DIR_NAME);
-        if (!dirPath.exists()) {
-            dirPath.mkdir();
+        String rootDirPath = MultipartUtil.getLocalHomeDirectory();
+        String dirPath = rootDirPath + "/" + s3FilePath.substring(0, s3FilePath.lastIndexOf("/"));
+        File fileDir = new File(dirPath);
+        if (!fileDir.exists()) {
+            fileDir.mkdir();
         }
 
 
-//        try {
-//            //1. 파일 다운로드하기
-////            File savedVideo = s3Storage.saveObjectInLocal(name, ROOT_DIR);
-//            //2.  ffmpeg 실행하여 변환하기
-//            for (VideoResolution r : VideoResolution.values()){
-//                convertFFmpegVideo(name, r);
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        log.debug("================================");
+        log.debug("s3FilePath = {}", s3FilePath);
+        log.debug("onlyName = {}", onlyName);
+        log.debug("s3DirPath = {}", s3DirPath);
+        log.debug("rootDirPath = {}", rootDirPath);
+        log.debug("dirPath = {}", dirPath);
+        log.debug("================================");
+
+        try {
+            //1. 파일 다운로드하기
+            File savedVideo = s3Storage.saveObjectInLocal(s3FilePath, rootDirPath);
+            //2.  ffmpeg 실행하여 변환하기
+            for (VideoResolution r : VideoResolution.values()){
+                convertFFmpegVideo(s3FilePath, r);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         try {
             //3. m3u8 마스터 파일 만들기 or 수정하기
-            createMasterFile(ONLY_FILENAME, DIR_NAME);
+            createMasterFile(onlyName, dirPath);
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // 4. ts, m3u8 파일 S3 업로드
+        try {
+            // mp4 지우기
+            File[] folderList = fileDir.listFiles(); //파일리스트 얻어오기
+
+            for (int j = 0; j < Objects.requireNonNull(folderList).length; j++) {
+                if (folderList[j].getName() == nameExtention) // 영상파일의 경우
+                    continue;
+                else {
+                    s3Storage.store(s3DirPath, folderList[j].getName(), folderList[j]);
+                }
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
 
 
-        //* -> ts, m3u8 파일 S3 업로드
-
         // 작업 파일 지우기
-//        while (dirPath.exists()) {
-//            File[] folder_list = dirPath.listFiles(); //파일리스트 얻어오기
-//
-//            for (int j = 0; j < Objects.requireNonNull(folder_list).length; j++)
-//                folder_list[j].delete(); //파일 삭제
-//
-//            if (folder_list.length == 0 && dirPath.isDirectory())
-//                dirPath.delete();
-//        }
+        while (fileDir.exists()) {
+            File[] folder_list = fileDir.listFiles(); //파일리스트 얻어오기
+
+            for (int j = 0; j < Objects.requireNonNull(folder_list).length; j++)
+                folder_list[j].delete(); //파일 삭제
+
+            if (folder_list.length == 0 && fileDir.isDirectory())
+                fileDir.delete();
+        }
 
 
     }
